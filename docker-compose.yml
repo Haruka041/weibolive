@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  weibolive:
+    build: .
+    image: weibolive:latest
+    container_name: weibolive
+    ports:
+      - "8887:8887"
+    environment:
+      WEIBOLIVE_HOST: "0.0.0.0"
+      WEIBOLIVE_PORT: "8887"
+      WEIBOLIVE_HEADLESS: "1"
+      WEIBOLIVE_ADMIN_USERNAME: "admin"
+      WEIBOLIVE_ADMIN_PASSWORD: "admin123"
+      # 可选：多管理员 JSON（优先级高于上面单账号配置）
+      # WEIBOLIVE_ADMIN_USERS: "{\"admin\":\"admin123\",\"ops\":\"ops123\"}"
+    volumes:
+      - ./data:/app/backend/data
+    restart: unless-stopped
