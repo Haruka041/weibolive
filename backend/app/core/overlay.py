@@ -26,21 +26,31 @@ def _ffmpeg_bin() -> str:
     )
 
 
-def _beijing_time_drawtext_filter() -> str:
+def _beijing_time_drawtext_filter(video_width: int, video_height: int) -> str:
     """
     黑屏挂机模式默认叠加北京时间动态时间，降低长时间静态黑屏风险。
     注意：时间源使用 drawtext 的 localtime，需要在进程环境中将 TZ 设为 Asia/Shanghai。
     """
+    font_size = max(12, min(28, video_height // 14))
+    margin = max(4, video_height // 36)
+    box_border = max(4, video_height // 90)
+
+    # 低分辨率档位（如 192x108 / 256x144）使用短格式，避免文字宽度溢出
+    if video_width < 360:
+        text_expr = "BJT %{localtime\\:%H\\:%M\\:%S}"
+    else:
+        text_expr = "BJT %{localtime\\:%Y-%m-%d %H\\:%M\\:%S}"
+
     return (
         "drawtext="
-        "text='北京时间 %{localtime\\:%Y-%m-%d %H\\:%M\\:%S}':"
-        "fontsize=22:"
+        f"text='{text_expr}':"
+        f"fontsize={font_size}:"
         "fontcolor=white@0.95:"
         "box=1:"
         "boxcolor=black@0.45:"
-        "boxborderw=8:"
-        "x=w-tw-20:"
-        "y=h-th-20"
+        f"boxborderw={box_border}:"
+        f"x={margin}:"
+        f"y={margin}"
     )
 
 
@@ -437,7 +447,7 @@ def build_ffmpeg_command_for_black_screen(
         and os.path.exists(watermark.image_path)
     )
     text_watermark_enabled = bool(watermark) and bool(watermark.enabled) and bool(watermark.text)
-    bjt_filter = _beijing_time_drawtext_filter()
+    bjt_filter = _beijing_time_drawtext_filter(video_width=width, video_height=height)
 
     if image_watermark_enabled:
         # 图片水印作为第二路视频输入

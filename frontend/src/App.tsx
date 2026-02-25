@@ -977,7 +977,7 @@ function App() {
             </div>
             {liveSourceType === "black" ? (
               <div className="hint" style={{ marginTop: -4 }}>
-                黑屏模式会发送纯黑画面和静音音轨，并在右下角动态显示北京时间，不需要上传或选择视频文件。
+                黑屏模式会发送纯黑画面和静音音轨，并在左上角动态显示北京时间（低分辨率档位会自动缩短格式），不需要上传或选择视频文件。
               </div>
             ) : null}
             {liveSourceType === "video" ? (
