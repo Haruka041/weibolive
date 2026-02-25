@@ -255,6 +255,21 @@ GitHub Release：
 1. 稳定追踪最新版：使用 `ghcr.io/haruka041/weibolive:latest`
 2. 需要可回滚版本：使用 `ghcr.io/haruka041/weibolive:commit-<12位短SHA>`
 
+## 常见问题
+
+### 日志出现 `No supported WebSocket library detected` / `/api/live/ws 404`
+
+原因：运行中的镜像缺少 WebSocket 运行依赖（`websockets` 或 `wsproto`），导致实时状态推送接口无法升级为 WebSocket。
+
+处理：
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+若你固定了旧的 `commit-xxx` 标签，请切到最新标签后再重启。
+
 ## 注意事项
 
 1. 请确保服务器有足够的带宽和 CPU 资源进行视频转码推流
