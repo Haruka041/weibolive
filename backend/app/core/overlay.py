@@ -32,7 +32,6 @@ def _beijing_time_drawtext_filter(video_width: int, video_height: int) -> str:
     注意：时间源使用 drawtext 的 localtime，需要在进程环境中将 TZ 设为 Asia/Shanghai。
     """
     font_size = max(12, min(28, video_height // 14))
-    margin = max(4, video_height // 36)
     box_border = max(4, video_height // 90)
 
     # 低分辨率档位（如 192x108 / 256x144）使用短格式，避免文字宽度溢出
@@ -49,8 +48,8 @@ def _beijing_time_drawtext_filter(video_width: int, video_height: int) -> str:
         "box=1:"
         "boxcolor=black@0.45:"
         f"boxborderw={box_border}:"
-        f"x={margin}:"
-        f"y={margin}"
+        "x=(w-tw)/2:"
+        "y=(h-th)/2"
     )
 
 
