@@ -244,45 +244,56 @@ class StreamManager:
             self.info.status = StreamStatus.STARTING
             self._emit_status()
 
-            self._start_time = asyncio.get_event_loop().time()
+            try:
+                self._start_time = asyncio.get_event_loop().time()
 
-            if config.pulse_enabled:
+                if config.pulse_enabled:
+                    self.info.status = StreamStatus.RUNNING
+                    self.info.error_message = ""
+                    self._emit_status()
+                    if self._monitor_task:
+                        self._monitor_task.cancel()
+                    if self._pulse_task:
+                        self._pulse_task.cancel()
+                    self._pulse_task = asyncio.create_task(self._pulse_stream(config))
+                    logger.info(
+                        f"脉冲保活推流已启动: {config.full_rtmp_url} "
+                        f"(on={config.pulse_on_seconds}s/off={config.pulse_off_seconds}s)"
+                    )
+                    return True, ""
+
+                success, error = await self._start_process(config)
+                if not success:
+                    self.info.status = StreamStatus.ERROR
+                    self.info.error_message = error
+                    self._emit_status()
+                    return False, error
+
                 self.info.status = StreamStatus.RUNNING
                 self.info.error_message = ""
+                self.info.pulse_phase = "steady"
                 self._emit_status()
+
                 if self._monitor_task:
                     self._monitor_task.cancel()
-                if self._pulse_task:
-                    self._pulse_task.cancel()
-                self._pulse_task = asyncio.create_task(self._pulse_stream(config))
-                logger.info(
-                    f"脉冲保活推流已启动: {config.full_rtmp_url} "
-                    f"(on={config.pulse_on_seconds}s/off={config.pulse_off_seconds}s)"
-                )
+                self._monitor_task = asyncio.create_task(self._monitor_process())
+
+                logger.info(f"推流已启动: {config.full_rtmp_url}")
                 return True, ""
-
-            success, error = await self._start_process(config)
-            if not success:
+            except Exception as exc:
+                logger.exception("启动推流时发生异常")
                 self.info.status = StreamStatus.ERROR
-                self.info.error_message = error
+                self.info.error_message = f"启动推流异常: {exc}"
                 self._emit_status()
-                return False, error
-
-            self.info.status = StreamStatus.RUNNING
-            self.info.error_message = ""
-            self.info.pulse_phase = "steady"
-            self._emit_status()
-
-            if self._monitor_task:
-                self._monitor_task.cancel()
-            self._monitor_task = asyncio.create_task(self._monitor_process())
-
-            logger.info(f"推流已启动: {config.full_rtmp_url}")
-            return True, ""
+                return False, self.info.error_message
 
     async def _start_process(self, config: StreamConfig) -> tuple[bool, str]:
         """启动 FFmpeg 进程并检测是否正常运行"""
-        cmd = self._build_ffmpeg_command(config)
+        try:
+            cmd = self._build_ffmpeg_command(config)
+        except Exception as exc:
+            logger.exception("构建 FFmpeg 命令失败")
+            return False, f"构建 FFmpeg 命令失败: {exc}"
         logger.info(f"FFmpeg 命令: {' '.join(cmd)}")
 
         self._stderr_buffer.clear()

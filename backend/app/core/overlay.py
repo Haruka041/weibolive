@@ -446,7 +446,6 @@ def build_ffmpeg_command_for_black_screen(
         and os.path.exists(watermark.image_path)
     )
     text_watermark_enabled = bool(watermark) and bool(watermark.enabled) and bool(watermark.text)
-    bjt_filter = _beijing_time_drawtext_filter(video_width=width, video_height=height)
 
     if image_watermark_enabled:
         # 图片水印作为第二路视频输入
@@ -472,6 +471,7 @@ def build_ffmpeg_command_for_black_screen(
             height = int(height_str)
         except ValueError:
             pass
+    bjt_filter = _beijing_time_drawtext_filter(video_width=width, video_height=height)
 
     if image_watermark_enabled:
         filter_complex = watermark.to_ffmpeg_params(video_width=width, video_height=height)
