@@ -2,8 +2,8 @@ version: "3.9"
 
 services:
   weibolive:
-    build: .
-    image: weibolive:latest
+    image: ${WEIBOLIVE_IMAGE:-ghcr.io/haruka041/weibolive:latest}
+    pull_policy: always
     container_name: weibolive
     ports:
       - "8887:8887"

@@ -22,20 +22,34 @@
 
 ## 快速开始
 
-### 使用 Docker Compose（推荐）
+### 使用 Docker Compose（推荐，默认 GHCR 镜像）
 
 ```bash
 # 克隆项目
+git clone https://github.com/Haruka041/weibolive.git
 cd weibolive
 
-# 构建并启动
-docker-compose up -d --build
+# 拉取镜像并启动
+docker compose pull
+docker compose up -d
 
 # 查看日志
-docker-compose logs -f
+docker compose logs -f
 ```
 
 访问 http://localhost:8887 打开管理界面。
+
+可选：固定到某个 commit 版本镜像再启动
+
+```bash
+WEIBOLIVE_IMAGE=ghcr.io/haruka041/weibolive:commit-<12位短SHA> docker compose up -d
+```
+
+可选：更新到最新镜像（一键）
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 ### 手动运行
 
@@ -236,6 +250,10 @@ GitHub Release：
 - Tag：`commit-<12位短SHA>`
 - Name：`commit-<12位短SHA>`
 - 自动附带 Release Notes 与镜像 digest
+
+生产环境建议：
+1. 稳定追踪最新版：使用 `ghcr.io/haruka041/weibolive:latest`
+2. 需要可回滚版本：使用 `ghcr.io/haruka041/weibolive:commit-<12位短SHA>`
 
 ## 注意事项
 
