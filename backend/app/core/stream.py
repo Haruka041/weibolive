@@ -5,6 +5,7 @@
 注意：本项目为官方授权的学习项目，仅供学习 Web 自动化和流媒体技术使用。
 """
 import asyncio
+import os
 import subprocess
 import logging
 import threading
@@ -286,13 +287,18 @@ class StreamManager:
 
         self._stderr_buffer.clear()
         self._stderr_thread = None
+        process_env = None
+        if config.stream_type == StreamType.BLACK_SCREEN:
+            process_env = os.environ.copy()
+            process_env.setdefault("TZ", "Asia/Shanghai")
 
         try:
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
-                stdin=subprocess.PIPE
+                stdin=subprocess.PIPE,
+                env=process_env,
             )
 
             if self.process.stderr:

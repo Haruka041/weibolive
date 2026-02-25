@@ -26,6 +26,24 @@ def _ffmpeg_bin() -> str:
     )
 
 
+def _beijing_time_drawtext_filter() -> str:
+    """
+    黑屏挂机模式默认叠加北京时间动态时间，降低长时间静态黑屏风险。
+    注意：时间源使用 drawtext 的 localtime，需要在进程环境中将 TZ 设为 Asia/Shanghai。
+    """
+    return (
+        "drawtext="
+        "text='北京时间 %{localtime\\:%Y-%m-%d %H\\:%M\\:%S}':"
+        "fontsize=22:"
+        "fontcolor=white@0.95:"
+        "box=1:"
+        "boxcolor=black@0.45:"
+        "boxborderw=8:"
+        "x=w-tw-20:"
+        "y=h-th-20"
+    )
+
+
 class WatermarkPosition(Enum):
     """水印位置"""
     TOP_LEFT = "top_left"
@@ -412,7 +430,16 @@ def build_ffmpeg_command_for_black_screen(
         f"color=c=black:s={output_size}:r={fps}",
     ]
 
-    if watermark and watermark.enabled and watermark.image_path and os.path.exists(watermark.image_path):
+    image_watermark_enabled = (
+        bool(watermark)
+        and bool(watermark.enabled)
+        and bool(watermark.image_path)
+        and os.path.exists(watermark.image_path)
+    )
+    text_watermark_enabled = bool(watermark) and bool(watermark.enabled) and bool(watermark.text)
+    bjt_filter = _beijing_time_drawtext_filter()
+
+    if image_watermark_enabled:
         # 图片水印作为第二路视频输入
         cmd.extend(["-loop", "1", "-i", watermark.image_path])
 
@@ -437,14 +464,20 @@ def build_ffmpeg_command_for_black_screen(
         except ValueError:
             pass
 
-    if watermark and watermark.enabled and watermark.image_path and os.path.exists(watermark.image_path):
+    if image_watermark_enabled:
         filter_complex = watermark.to_ffmpeg_params(video_width=width, video_height=height)
         if filter_complex:
-            cmd.extend(["-filter_complex", filter_complex])
-    elif watermark and watermark.enabled and watermark.text:
+            cmd.extend(["-filter_complex", f"{filter_complex},{bjt_filter}"])
+        else:
+            cmd.extend(["-vf", bjt_filter])
+    elif text_watermark_enabled:
         vf = watermark.to_ffmpeg_params(video_width=width, video_height=height)
         if vf:
-            cmd.extend(["-vf", vf])
+            cmd.extend(["-vf", f"{vf},{bjt_filter}"])
+        else:
+            cmd.extend(["-vf", bjt_filter])
+    else:
+        cmd.extend(["-vf", bjt_filter])
 
     try:
         maxrate_k = int(maxrate.replace("k", ""))
