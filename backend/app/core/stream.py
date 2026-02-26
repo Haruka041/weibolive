@@ -70,7 +70,7 @@ class StreamConfig:
     pulse_on_seconds: int = 120
     pulse_off_seconds: int = 60
     
-    # YouTube 相关
+    # 重连相关（URL/本地视频/黑屏均可用）
     youtube_video_id: Optional[str] = None
     quality: str = "best"
     auto_reconnect: bool = True
@@ -665,10 +665,25 @@ class StreamManager:
                 return
 
             config = self.info.config
+            is_local_video_finished = (
+                config is not None
+                and config.stream_type == StreamType.LOCAL_VIDEO
+                and not config.loop
+                and exit_code == 0
+            )
+            supports_reconnect = (
+                config is not None
+                and config.stream_type in {
+                    StreamType.URL_STREAM,
+                    StreamType.LOCAL_VIDEO,
+                    StreamType.BLACK_SCREEN,
+                }
+            )
             can_reconnect = (
                 config is not None
-                and config.stream_type == StreamType.URL_STREAM
+                and supports_reconnect
                 and config.auto_reconnect
+                and not is_local_video_finished
                 and (
                     config.max_reconnect_attempts == 0
                     or self.info.reconnect_attempts < config.max_reconnect_attempts
@@ -708,6 +723,13 @@ class StreamManager:
                 self.info.error_message = error
                 self._emit_status()
                 logger.error(f"自动重连失败: {error}")
+                return
+
+            if is_local_video_finished:
+                self.info.status = StreamStatus.IDLE
+                self.info.error_message = ""
+                self._emit_status()
+                logger.info("本地视频（非循环）已播放结束")
                 return
 
             # 无法重连，标记失败
